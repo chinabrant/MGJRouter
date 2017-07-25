@@ -170,9 +170,10 @@ NSString *const MGJRouterParameterUserInfo = @"MGJRouterParameterUserInfo";
     }
 }
 
+// 示例： app://aa/:bb/:cc
 - (NSMutableDictionary *)addURLPattern:(NSString *)URLPattern
 {
-    NSArray *pathComponents = [self pathComponentsFromURL:URLPattern];
+    NSArray *pathComponents = [self pathComponentsFromURL:URLPattern]; // @{ @"app", @"aa", @":bb", @":cc" }
 
     NSMutableDictionary* subRoutes = self.routes;
     
@@ -182,6 +183,21 @@ NSString *const MGJRouterParameterUserInfo = @"MGJRouterParameterUserInfo";
         }
         subRoutes = subRoutes[pathComponent];
     }
+    
+    /*
+     @{
+        "app": {
+            "aa" : {
+                ":bb" : {
+                    ":cc" : {
+                        "_": [handler copy],
+                    }
+                }
+            }
+        }
+     }
+     */
+    
     return subRoutes;
 }
 
@@ -276,6 +292,9 @@ NSString *const MGJRouterParameterUserInfo = @"MGJRouterParameterUserInfo";
     }
 }
 
+/*
+ 示例： app://aa/:bb/:cc
+ */
 - (NSArray*)pathComponentsFromURL:(NSString*)URL
 {
 
@@ -283,21 +302,22 @@ NSString *const MGJRouterParameterUserInfo = @"MGJRouterParameterUserInfo";
     if ([URL rangeOfString:@"://"].location != NSNotFound) {
         NSArray *pathSegments = [URL componentsSeparatedByString:@"://"];
         // 如果 URL 包含协议，那么把协议作为第一个元素放进去
-        [pathComponents addObject:pathSegments[0]];
+        [pathComponents addObject:pathSegments[0]]; // app 加进去
         
         // 如果只有协议，那么放一个占位符
-        URL = pathSegments.lastObject;
+        URL = pathSegments.lastObject;  // URL的值变成了这个：@"aa/:bb/:cc"
         if (!URL.length) {
             [pathComponents addObject:MGJ_ROUTER_WILDCARD_CHARACTER];
         }
     }
 
+    // pathComponents : @{ @"aa:, @":bb", @":cc"}
     for (NSString *pathComponent in [[NSURL URLWithString:URL] pathComponents]) {
         if ([pathComponent isEqualToString:@"/"]) continue;
         if ([[pathComponent substringToIndex:1] isEqualToString:@"?"]) break;
         [pathComponents addObject:pathComponent];
     }
-    return [pathComponents copy];
+    return [pathComponents copy]; // 返回值 @{ @"app", @"aa", ":bb", ":cc" }
 }
 
 - (NSMutableDictionary *)routes
